@@ -29,14 +29,54 @@
 #include <iostream>
 #include <vector>
 #include <math.h>
+#include <unordered_map>
 using namespace std;
 
 double probabilityOfWinning(int seedX, int seedY) {
     return (double) seedY / (seedX + seedY);
 }
 
-double calculateTeamSeedTouranmentWinProbability(int seed) {
-    return 0.0;
+unordered_map<int, double> createProbabilityHashMapSeed(int seed, vector<int> vec) {
+    unordered_map<int, double> m;
+    for (int i = 0; i < vec.size(); i++) {
+        if (vec.at(i) != seed) {
+            int higherSeed, lowerSeed;
+            if (seed > vec[i]) {
+                lowerSeed = seed;
+                higherSeed = vec[i];
+            } else {
+                lowerSeed = vec[i];
+                higherSeed = seed;
+            }
+            m[vec.at(i)] = probabilityOfWinning(lowerSeed, higherSeed);
+        }
+    }
+    return m;
+}
+
+double calculateTeamSeedTouranmentWinProbability(int seed, vector<int> vec, unordered_map<int, double> m) {
+    vector<int> copyVec = vec;
+    double probability = 1.0;
+    
+    while (copyVec.size() > 2) {
+        vector<int> newVec;
+        for (int i = 0; i < copyVec.size() - 1; i++) {
+            int higherSeed, lowerSeed;
+            if (copyVec[i] > copyVec[i+1]) {
+                lowerSeed = copyVec[i+1];
+                higherSeed = copyVec[i];
+            } else {
+                lowerSeed = copyVec[i];
+                higherSeed = copyVec[i+1];
+            }
+            if (lowerSeed == seed) {
+                probability *= m[higherSeed];
+            } 
+            newVec.push_back(lowerSeed);
+        }
+        copyVec = newVec;
+    }
+    return probability * probabilityOfWinning(2, 1);
 }
 
 vector<int> nextLayer(vector<int> vec) {
@@ -63,10 +103,29 @@ vector<int> seeding(int numTeams) {
 }
 
 int main() {
-    vector<int> v = seeding(16);
 
-    for (int i = 0; i < v.size() - 2; i+=2) {
-        cout << v[i] << " - " << probabilityOfWinning(v[i], v[i+1]) << "\n";
+    cout.precision(6);
+
+    vector<int> v = seeding(16);
+    unordered_map<int, double> m = createProbabilityHashMapSeed(2, v);
+
+    double topProbabilityForSeed = calculateTeamSeedTouranmentWinProbability(2, v, m);
+    cout << "Probability for normal bracket is " << topProbabilityForSeed << "\n";
+    
+    int numToSwap;
+    for (int i = 2; i < v.size(); i++) {
+        int temp = v[1];
+        v[1] = v[i];
+        v[i] = temp;
+        double swapProbabilityWinForWin = calculateTeamSeedTouranmentWinProbability(2, v, m);
+        if (swapProbabilityWinForWin > topProbabilityForSeed) {
+            numToSwap = v[i];
+            topProbabilityForSeed = swapProbabilityWinForWin;
+            cout << "Probability for swap bracket between seed 16 and " << numToSwap << " is " << topProbabilityForSeed << " %";
+        }
+        temp = v[1];
+        v[1] = v[i];
+        v[i] = temp;
     }
     return 0;
 }
