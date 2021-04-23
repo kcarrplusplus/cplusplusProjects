@@ -30,10 +30,11 @@
 #include <vector>
 #include <math.h>
 #include <unordered_map>
+#include <algorithm>
 using namespace std;
 
 double probabilityOfWinning(int seedX, int seedY) {
-    return (double) seedY / (seedX + seedY);
+    return (double) seedX / (seedX + seedY);
 }
 
 unordered_map<int, double> createProbabilityHashMapSeed(int seed, vector<int> vec) {
@@ -58,7 +59,7 @@ double calculateTeamSeedTouranmentWinProbability(int seed, vector<int> vec, unor
     vector<int> copyVec = vec;
     double probability = 1.0;
     
-    while (copyVec.size() > 2) {
+    while (copyVec.size() >= 2) {
         vector<int> newVec;
         for (int i = 0; i < copyVec.size() - 1; i++) {
             int higherSeed, lowerSeed;
@@ -76,7 +77,7 @@ double calculateTeamSeedTouranmentWinProbability(int seed, vector<int> vec, unor
         }
         copyVec = newVec;
     }
-    return probability * probabilityOfWinning(2, 1);
+    return probability;
 }
 
 vector<int> nextLayer(vector<int> vec) {
@@ -108,24 +109,27 @@ int main() {
 
     vector<int> v = seeding(16);
     unordered_map<int, double> m = createProbabilityHashMapSeed(2, v);
+    // // print k v pairs of map to verify
+    // for (const auto& it: m)
+    //   cout << it.first << " " << it.second << endl;
 
+    // check why initial probabilty is 0
     double topProbabilityForSeed = calculateTeamSeedTouranmentWinProbability(2, v, m);
     cout << "Probability for normal bracket is " << topProbabilityForSeed << "\n";
     
     int numToSwap;
     for (int i = 2; i < v.size(); i++) {
-        int temp = v[1];
-        v[1] = v[i];
-        v[i] = temp;
-        double swapProbabilityWinForWin = calculateTeamSeedTouranmentWinProbability(2, v, m);
-        if (swapProbabilityWinForWin > topProbabilityForSeed) {
-            numToSwap = v[i];
-            topProbabilityForSeed = swapProbabilityWinForWin;
-            cout << "Probability for swap bracket between seed 16 and " << numToSwap << " is " << topProbabilityForSeed << " %";
+        if (v[i] != 2) {
+            swap(v[1], v[i]);
+            double swapProbabilityWinForWin = calculateTeamSeedTouranmentWinProbability(2, v, m);
+            if (swapProbabilityWinForWin > topProbabilityForSeed) {
+                numToSwap = v[i];
+                topProbabilityForSeed = swapProbabilityWinForWin;
+                cout << "Probability for swap bracket between seed 16 and " << v[1] << " is " << topProbabilityForSeed << " %\n";
+            }
+            swap(v[1], v[i]);
         }
-        temp = v[1];
-        v[1] = v[i];
-        v[i] = temp;
+        
     }
     return 0;
 }
